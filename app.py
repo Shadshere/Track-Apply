@@ -8,6 +8,11 @@ app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-pr
 
 # Database configuration
 # Use /tmp for cloud platforms (Railway, Heroku, Render) or local for development
+print(f"Environment check - PORT: {os.environ.get('PORT')}")
+print(f"Environment check - RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT')}")
+print(f"Environment check - DYNO: {os.environ.get('DYNO')}")
+print(f"Environment check - RENDER: {os.environ.get('RENDER')}")
+
 if os.environ.get('PORT') or os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DYNO') or os.environ.get('RENDER'):
     DATABASE = '/tmp/trackApply.db'
 else:
@@ -66,11 +71,21 @@ def index():
     """Home page showing all applications"""
     conn = None
     try:
+        print(f"Index route: connecting to database {DATABASE}")
         conn = get_db_connection()
+        
+        # Check total count first
+        count_result = conn.execute('SELECT COUNT(*) as count FROM applications').fetchone()
+        print(f"Index route: Total applications in database: {count_result['count']}")
+        
         applications = conn.execute('''
             SELECT * FROM applications 
             ORDER BY application_date DESC, created_at DESC
         ''').fetchall()
+        
+        print(f"Index route: Retrieved {len(applications)} applications")
+        for app in applications:
+            print(f"Application: ID={app['id']}, Company={app['company_name']}, Job={app['job_title']}")
         
         # Count applications by status
         status_counts = conn.execute('''
@@ -79,7 +94,12 @@ def index():
             GROUP BY status
         ''').fetchall()
         
+        print(f"Index route: Status counts: {[(row['status'], row['count']) for row in status_counts]}")
+        
         stats = {row['status']: row['count'] for row in status_counts}
+        
+        print(f"Index route: Final stats dict: {stats}")
+        print(f"Index route: Rendering template with {len(applications)} applications")
         
         return render_template('index.html', applications=applications, stats=stats)
     except Exception as e:
