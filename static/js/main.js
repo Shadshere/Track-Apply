@@ -104,13 +104,23 @@ function initializeFormValidations() {
  * Initialize dashboard features
  */
 function initializeDashboard() {
-    // Add loading states to buttons
-    const buttons = document.querySelectorAll('button[type="submit"]');
-    buttons.forEach(button => {
-        button.addEventListener('click', function() {
-            if (this.form && this.form.checkValidity()) {
+    // Simplified form submission handling
+    const submitButtons = document.querySelectorAll('button[type="submit"]');
+    submitButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const form = this.closest('form');
+            if (form && form.checkValidity()) {
+                // Show processing state briefly
+                const originalText = this.innerHTML;
                 this.innerHTML = '<span class="loading me-2"></span>Processing...';
                 this.disabled = true;
+                
+                // Allow form to submit normally
+                setTimeout(() => {
+                    // Form will navigate away, but this is a fallback
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 5000);
             }
         });
     });
