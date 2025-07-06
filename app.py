@@ -49,35 +49,46 @@ def init_db():
         print(f"Database initialization error: {e}")
         raise
 
-# Initialize database when module is imported (for gunicorn)
-try:
-    init_db()
-    print("Database initialized on module import")
-except Exception as e:
-    print(f"Failed to initialize database on import: {e}")
+# Initialize database when app starts
+with app.app_context():
+    try:
+        init_db()
+        print("Database initialized in app context")
+    except Exception as e:
+        print(f"Failed to initialize database in app context: {e}")
 
 @app.route('/')
 def index():
     """Home page showing all applications"""
-    conn = get_db_connection()
-    applications = conn.execute('''
-        SELECT * FROM applications 
-        ORDER BY application_date DESC, created_at DESC
-    ''').fetchall()
-    conn.close()
-    
-    # Count applications by status
-    conn = get_db_connection()
-    status_counts = conn.execute('''
-        SELECT status, COUNT(*) as count 
-        FROM applications 
-        GROUP BY status
-    ''').fetchall()
-    conn.close()
-    
-    stats = {row['status']: row['count'] for row in status_counts}
-    
-    return render_template('index.html', applications=applications, stats=stats)
+    try:
+        conn = get_db_connection()
+        applications = conn.execute('''
+            SELECT * FROM applications 
+            ORDER BY application_date DESC, created_at DESC
+        ''').fetchall()
+        conn.close()
+        
+        # Count applications by status
+        conn = get_db_connection()
+        status_counts = conn.execute('''
+            SELECT status, COUNT(*) as count 
+            FROM applications 
+            GROUP BY status
+        ''').fetchall()
+        conn.close()
+        
+        stats = {row['status']: row['count'] for row in status_counts}
+        
+        return render_template('index.html', applications=applications, stats=stats)
+    except Exception as e:
+        print(f"Error in index route: {e}")
+        # If database doesn't exist, initialize it and return empty page
+        try:
+            init_db()
+            return render_template('index.html', applications=[], stats={})
+        except Exception as init_error:
+            print(f"Failed to initialize database in index route: {init_error}")
+            return f"Database Error: {init_error}", 500
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_application():
