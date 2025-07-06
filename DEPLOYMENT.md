@@ -1,11 +1,52 @@
 # TrackApply Deployment Guide
 
-## Quick Start (Development)
+## 🚀 One-Click Deployment
+
+### Deploy to Heroku (Recommended)
+
+Click the button below to deploy TrackApply to Heroku instantly:
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/Shadshere/Track-Apply)
+
+### Manual Heroku Deployment
+
+1. **Create a Heroku account** at [heroku.com](https://heroku.com)
+
+2. **Install Heroku CLI**
+   - Download from [devcenter.heroku.com/articles/heroku-cli](https://devcenter.heroku.com/articles/heroku-cli)
+
+3. **Login to Heroku**
+   ```bash
+   heroku login
+   ```
+
+4. **Create a new Heroku app**
+   ```bash
+   heroku create your-app-name
+   ```
+
+5. **Set environment variables**
+   ```bash
+   heroku config:set SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(16))')
+   heroku config:set FLASK_ENV=production
+   ```
+
+6. **Deploy**
+   ```bash
+   git push heroku main
+   ```
+
+7. **Open your app**
+   ```bash
+   heroku open
+   ```
+
+## 🖥️ Local Development
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
-   cd TrackApply
+   git clone https://github.com/Shadshere/Track-Apply.git
+   cd Track-Apply
    ```
 
 2. **Install dependencies**
@@ -104,3 +145,54 @@ cp trackApply.db trackApply_backup_$(date +%Y%m%d).db
 # Restore
 cp trackApply_backup_YYYYMMDD.db trackApply.db
 ```
+
+## Alternative Deployment Methods
+
+### Deploy to Railway
+
+1. **Fork the repository** on GitHub
+2. **Visit [railway.app](https://railway.app)**
+3. **Connect your GitHub account**
+4. **Select "Deploy from GitHub repo"**
+5. **Choose your forked TrackApply repository**
+6. **Set environment variables:**
+   - `SECRET_KEY`: Generate a random secret key
+   - `FLASK_ENV`: `production`
+7. **Deploy** - Railway will automatically detect it's a Python app
+
+### Deploy to Render
+
+1. **Fork the repository** on GitHub
+2. **Visit [render.com](https://render.com)**
+3. **Create a new Web Service**
+4. **Connect your GitHub repository**
+5. **Configuration:**
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn app:app`
+   - **Environment**: Python 3
+6. **Set environment variables:**
+   - `SECRET_KEY`: Generate a random secret key
+   - `FLASK_ENV`: `production`
+7. **Deploy**
+
+### Deploy to PythonAnywhere
+
+1. **Create account** at [pythonanywhere.com](https://pythonanywhere.com)
+2. **Upload your code** via Files tab
+3. **Create a web app:**
+   - Choose "Manual configuration"
+   - Select Python 3.x
+4. **Configure WSGI file:**
+   ```python
+   import sys
+   path = '/home/yourusername/Track-Apply'
+   if path not in sys.path:
+       sys.path.insert(0, path)
+   
+   from app import app as application
+   ```
+5. **Install requirements** in Bash console:
+   ```bash
+   pip3.x install --user -r requirements.txt
+   ```
+6. **Reload web app**

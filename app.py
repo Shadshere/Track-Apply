@@ -4,11 +4,10 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this-in-production'
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
 # Database configuration
-import os
-DATABASE = os.environ.get('DATABASE_URL', 'trackApply.db')
+DATABASE = 'trackApply.db'
 
 def get_db_connection():
     """Get database connection"""
@@ -161,15 +160,11 @@ def api_stats():
     })
 
 if __name__ == '__main__':
-    import os
-    
     # Initialize database on first run
     init_db()
     
-    # Get port from environment variable (for Heroku) or default to 5000
+    # Get port from environment variable or default to 5000
     port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
     
-    # Disable debug mode in production
-    debug_mode = os.environ.get('FLASK_ENV', 'development') == 'development'
-    
-    app.run(debug=debug_mode, host='0.0.0.0', port=port)
+    app.run(debug=debug, host='0.0.0.0', port=port)

@@ -1,0 +1,29 @@
+{
+  "name": "TrackApply",
+  "description": "A Flask-based job application tracker to help job seekers stay organized during their job search",
+  "repository": "https://github.com/Shadshere/Track-Apply",
+  "logo": "https://github.com/Shadshere/Track-Apply/raw/main/static/images/logo.png",
+  "keywords": ["flask", "python", "job-tracker", "web-app", "sqlite"],
+  "stack": "heroku-22",
+  "env": {
+    "SECRET_KEY": {
+      "description": "A secret key for Flask sessions",
+      "generator": "secret"
+    },
+    "FLASK_ENV": {
+      "description": "Flask environment",
+      "value": "production"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "eco"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}
