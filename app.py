@@ -16,10 +16,14 @@ else:
 print(f"Using database path: {DATABASE}")
 
 def get_db_connection():
-    """Get database connection"""
+    """Get database connection with proper timeout and WAL mode"""
     try:
-        conn = sqlite3.connect(DATABASE)
+        conn = sqlite3.connect(DATABASE, timeout=30.0)
         conn.row_factory = sqlite3.Row
+        # Enable WAL mode for better concurrency
+        conn.execute('PRAGMA journal_mode=WAL;')
+        # Set busy timeout
+        conn.execute('PRAGMA busy_timeout=30000;')
         return conn
     except Exception as e:
         print(f"Database connection error: {e}")
@@ -60,22 +64,20 @@ with app.app_context():
 @app.route('/')
 def index():
     """Home page showing all applications"""
+    conn = None
     try:
         conn = get_db_connection()
         applications = conn.execute('''
             SELECT * FROM applications 
             ORDER BY application_date DESC, created_at DESC
         ''').fetchall()
-        conn.close()
         
         # Count applications by status
-        conn = get_db_connection()
         status_counts = conn.execute('''
             SELECT status, COUNT(*) as count 
             FROM applications 
             GROUP BY status
         ''').fetchall()
-        conn.close()
         
         stats = {row['status']: row['count'] for row in status_counts}
         
@@ -89,6 +91,9 @@ def index():
         except Exception as init_error:
             print(f"Failed to initialize database in index route: {init_error}")
             return f"Database Error: {init_error}", 500
+    finally:
+        if conn:
+            conn.close()
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_application():
@@ -104,63 +109,84 @@ def add_application():
             flash('Company name, job title, and application date are required!', 'error')
             return render_template('add.html')
         
-        conn = get_db_connection()
-        conn.execute('''
-            INSERT INTO applications (company_name, job_title, application_date, status, notes)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (company_name, job_title, application_date, status, notes))
-        conn.commit()
-        conn.close()
-        
-        flash('Application added successfully!', 'success')
-        return redirect(url_for('index'))
+        conn = None
+        try:
+            conn = get_db_connection()
+            conn.execute('''
+                INSERT INTO applications (company_name, job_title, application_date, status, notes)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (company_name, job_title, application_date, status, notes))
+            conn.commit()
+            flash('Application added successfully!', 'success')
+            return redirect(url_for('index'))
+        except Exception as e:
+            print(f"Error adding application: {e}")
+            flash('Error adding application. Please try again.', 'error')
+            return render_template('add.html')
+        finally:
+            if conn:
+                conn.close()
     
     return render_template('add.html')
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
 def edit_application(id):
     """Edit existing job application"""
-    conn = get_db_connection()
-    application = conn.execute('SELECT * FROM applications WHERE id = ?', (id,)).fetchone()
-    
-    if not application:
-        flash('Application not found!', 'error')
+    conn = None
+    try:
+        conn = get_db_connection()
+        application = conn.execute('SELECT * FROM applications WHERE id = ?', (id,)).fetchone()
+        
+        if not application:
+            flash('Application not found!', 'error')
+            return redirect(url_for('index'))
+        
+        if request.method == 'POST':
+            company_name = request.form['company_name']
+            job_title = request.form['job_title']
+            application_date = request.form['application_date']
+            status = request.form['status']
+            notes = request.form['notes']
+            
+            if not company_name or not job_title or not application_date:
+                flash('Company name, job title, and application date are required!', 'error')
+                return render_template('edit.html', application=application)
+            
+            conn.execute('''
+                UPDATE applications 
+                SET company_name=?, job_title=?, application_date=?, status=?, notes=?, updated_at=CURRENT_TIMESTAMP
+                WHERE id=?
+            ''', (company_name, job_title, application_date, status, notes, id))
+            conn.commit()
+            
+            flash('Application updated successfully!', 'success')
+            return redirect(url_for('index'))
+        
+        return render_template('edit.html', application=application)
+    except Exception as e:
+        print(f"Error in edit route: {e}")
+        flash('Error accessing application. Please try again.', 'error')
         return redirect(url_for('index'))
-    
-    if request.method == 'POST':
-        company_name = request.form['company_name']
-        job_title = request.form['job_title']
-        application_date = request.form['application_date']
-        status = request.form['status']
-        notes = request.form['notes']
-        
-        if not company_name or not job_title or not application_date:
-            flash('Company name, job title, and application date are required!', 'error')
-            return render_template('edit.html', application=application)
-        
-        conn.execute('''
-            UPDATE applications 
-            SET company_name=?, job_title=?, application_date=?, status=?, notes=?, updated_at=CURRENT_TIMESTAMP
-            WHERE id=?
-        ''', (company_name, job_title, application_date, status, notes, id))
-        conn.commit()
-        conn.close()
-        
-        flash('Application updated successfully!', 'success')
-        return redirect(url_for('index'))
-    
-    conn.close()
-    return render_template('edit.html', application=application)
+    finally:
+        if conn:
+            conn.close()
 
 @app.route('/delete/<int:id>')
 def delete_application(id):
     """Delete job application"""
-    conn = get_db_connection()
-    conn.execute('DELETE FROM applications WHERE id = ?', (id,))
-    conn.commit()
-    conn.close()
+    conn = None
+    try:
+        conn = get_db_connection()
+        conn.execute('DELETE FROM applications WHERE id = ?', (id,))
+        conn.commit()
+        flash('Application deleted successfully!', 'success')
+    except Exception as e:
+        print(f"Error deleting application: {e}")
+        flash('Error deleting application. Please try again.', 'error')
+    finally:
+        if conn:
+            conn.close()
     
-    flash('Application deleted successfully!', 'success')
     return redirect(url_for('index'))
 
 @app.route('/api/stats')
