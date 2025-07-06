@@ -4,7 +4,7 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this-in-production'
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
 # Database configuration
 DATABASE = 'trackApply.db'
@@ -163,4 +163,11 @@ if __name__ == '__main__':
     # Initialize database on first run
     init_db()
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Use environment variables for production
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
+    app.run(debug=debug, host='0.0.0.0', port=port)
+
+# Initialize database when module is imported (for production)
+init_db()
