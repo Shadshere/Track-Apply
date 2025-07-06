@@ -4,6 +4,10 @@ A modern, responsive web application built with Flask to help job seekers track 
 
 ![TrackApply Logo](static/images/logo.png)
 
+## 🚀 Quick Deploy
+
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/Shadshere/Track-Apply)
+
 ## ✨ Features
 
 - **📝 Application Management**: Add, edit, and delete job applications
