@@ -7,13 +7,16 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
 # Database configuration
-# Use /tmp for cloud platforms (Railway, Heroku, Render) or local for development
 print(f"Environment check - PORT: {os.environ.get('PORT')}")
 print(f"Environment check - RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT')}")
 print(f"Environment check - DYNO: {os.environ.get('DYNO')}")
 print(f"Environment check - RENDER: {os.environ.get('RENDER')}")
 
-if os.environ.get('PORT') or os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DYNO') or os.environ.get('RENDER'):
+# Try different database paths for Railway
+if os.environ.get('RAILWAY_ENVIRONMENT'):
+    # Try Railway's data directory first, fallback to tmp
+    DATABASE = os.environ.get('DATABASE_PATH', './trackApply.db')
+elif os.environ.get('PORT') or os.environ.get('DYNO') or os.environ.get('RENDER'):
     DATABASE = '/tmp/trackApply.db'
 else:
     DATABASE = 'trackApply.db'
@@ -58,13 +61,53 @@ def init_db():
         print(f"Database initialization error: {e}")
         raise
 
+def add_sample_data():
+    """Add sample data for testing on cloud platforms"""
+    try:
+        conn = get_db_connection()
+        
+        # Check if we already have data
+        count = conn.execute('SELECT COUNT(*) as count FROM applications').fetchone()
+        if count['count'] > 0:
+            print("Sample data already exists")
+            conn.close()
+            return
+            
+        # Add sample applications
+        sample_apps = [
+            ('Google', 'Software Engineer', '2025-07-01', 'Applied', 'Applied through careers page'),
+            ('Microsoft', 'Frontend Developer', '2025-07-02', 'Interview', 'Phone screening completed'),
+            ('Apple', 'iOS Developer', '2025-07-03', 'Under Review', 'Waiting for technical interview'),
+        ]
+        
+        for app in sample_apps:
+            conn.execute('''
+                INSERT INTO applications (company_name, job_title, application_date, status, notes)
+                VALUES (?, ?, ?, ?, ?)
+            ''', app)
+        
+        conn.commit()
+        conn.close()
+        print("Sample data added successfully")
+    except Exception as e:
+        print(f"Error adding sample data: {e}")
+
 # Initialize database when app starts
 with app.app_context():
     try:
         init_db()
         print("Database initialized in app context")
+        
+        # Add sample data on cloud platforms for testing
+        if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('PORT'):
+            add_sample_data()
+            
     except Exception as e:
         print(f"Failed to initialize database in app context: {e}")
+    try:
+        add_sample_data()
+    except Exception as e:
+        print(f"Failed to add sample data in app context: {e}")
 
 @app.route('/')
 def index():
