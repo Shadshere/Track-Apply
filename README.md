@@ -7,6 +7,9 @@ A modern, responsive web application built with Flask to help job seekers track 
 ## 🚀 Quick Deploy
 
 https://web-production-17969.up.railway.app/ 
+REMINDER : This project is stil work-in-progress 
+-Dashboard update feature is currently under development. The Add New Application still does not work correctly
+-Only delete action is functional, add or edit doesnt work currently
 
 ## ✨ Features
 
@@ -191,10 +194,6 @@ This is a personal project, but suggestions and improvements are welcome! Feel f
 - Report bugs
 - Suggest new features
 - Submit pull requests
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
 
 ## 🎯 Future Enhancements
 
