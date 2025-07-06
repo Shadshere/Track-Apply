@@ -105,6 +105,8 @@ def add_application():
         status = request.form['status']
         notes = request.form['notes']
         
+        print(f"Received form data: {company_name}, {job_title}, {application_date}, {status}")
+        
         if not company_name or not job_title or not application_date:
             flash('Company name, job title, and application date are required!', 'error')
             return render_template('add.html')
@@ -112,11 +114,20 @@ def add_application():
         conn = None
         try:
             conn = get_db_connection()
-            conn.execute('''
+            print(f"Inserting into database: {DATABASE}")
+            
+            cursor = conn.execute('''
                 INSERT INTO applications (company_name, job_title, application_date, status, notes)
                 VALUES (?, ?, ?, ?, ?)
             ''', (company_name, job_title, application_date, status, notes))
+            
+            print(f"Inserted record with ID: {cursor.lastrowid}")
             conn.commit()
+            
+            # Verify the insertion
+            count = conn.execute('SELECT COUNT(*) as count FROM applications').fetchone()
+            print(f"Total applications in database: {count['count']}")
+            
             flash('Application added successfully!', 'success')
             return redirect(url_for('index'))
         except Exception as e:
@@ -218,6 +229,36 @@ def api_stats():
         'recent': recent,
         'by_status': {row['status']: row['count'] for row in status_counts}
     })
+
+@app.route('/debug')
+def debug_database():
+    """Debug route to check database contents"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        
+        # Check if table exists
+        tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
+        
+        # Get all applications
+        applications = conn.execute('SELECT * FROM applications ORDER BY created_at DESC').fetchall()
+        
+        # Count total
+        count = conn.execute('SELECT COUNT(*) as count FROM applications').fetchone()
+        
+        debug_info = {
+            'database_path': DATABASE,
+            'tables': [table['name'] for table in tables],
+            'total_applications': count['count'],
+            'applications': [dict(app) for app in applications]
+        }
+        
+        return jsonify(debug_info)
+    except Exception as e:
+        return jsonify({'error': str(e)})
+    finally:
+        if conn:
+            conn.close()
 
 if __name__ == '__main__':
     # Print environment info for debugging
