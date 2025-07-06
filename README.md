@@ -6,7 +6,7 @@ A modern, responsive web application built with Flask to help job seekers track 
 
 ## 🚀 Quick Deploy
 
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/Shadshere/Track-Apply)
+https://web-production-17969.up.railway.app/ 
 
 ## ✨ Features
 
@@ -17,6 +17,12 @@ A modern, responsive web application built with Flask to help job seekers track 
 - **🎨 Modern UI**: Beautiful gradient design with smooth animations
 - **📝 Notes System**: Add detailed notes for each application
 - **🔍 Easy Navigation**: Clean, intuitive interface
+
+![Homepage_TrackApply](https://github.com/user-attachments/assets/f931bccf-133c-4f0e-abb6-8dd31a036567)
+
+![AddNewApplication_TrackApply](https://github.com/user-attachments/assets/f70c67ca-7ee2-49e0-b80f-ba86944bf2fb)
+
+
 
 ## 🚀 Getting Started
 
