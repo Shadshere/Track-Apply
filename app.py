@@ -7,7 +7,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
 # Database configuration
-if os.environ.get('RAILWAY_STATIC_URL') or os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DYNO') or os.environ.get('RENDER'):  # Detect Railway, Heroku, Render
+# Use /tmp for production (cloud platforms), local directory for development
+if os.environ.get('PORT'):  # Most cloud platforms set PORT environment variable
     DATABASE = '/tmp/trackApply.db'
 else:
     DATABASE = 'trackApply.db'
