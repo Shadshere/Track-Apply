@@ -7,35 +7,53 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
 # Database configuration
-# Use /tmp for production (cloud platforms), local directory for development
-if os.environ.get('PORT'):  # Most cloud platforms set PORT environment variable
+# Use PORT environment variable to detect cloud deployment
+if os.environ.get('PORT'):  # Cloud platforms set PORT env variable
     DATABASE = '/tmp/trackApply.db'
 else:
     DATABASE = 'trackApply.db'
 
 def get_db_connection():
     """Get database connection"""
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        conn = sqlite3.connect(DATABASE)
+        conn.row_factory = sqlite3.Row
+        return conn
+    except Exception as e:
+        print(f"Database connection error: {e}")
+        raise
 
 def init_db():
     """Initialize the database with required tables"""
-    conn = get_db_connection()
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS applications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            company_name TEXT NOT NULL,
-            job_title TEXT NOT NULL,
-            application_date DATE NOT NULL,
-            status TEXT NOT NULL DEFAULT 'Applied',
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+    try:
+        print(f"Initializing database at: {DATABASE}")
+        conn = get_db_connection()
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS applications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_name TEXT NOT NULL,
+                job_title TEXT NOT NULL,
+                application_date DATE NOT NULL,
+                status TEXT NOT NULL DEFAULT 'Applied',
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+        conn.close()
+        print("Database initialized successfully")
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+        raise
     conn.commit()
     conn.close()
+
+# Initialize database when the module is loaded (for gunicorn)
+try:
+    init_db()
+except Exception as e:
+    print(f"Warning: Could not initialize database at startup: {e}")
 
 @app.route('/')
 def index():
@@ -172,3 +190,10 @@ if __name__ == '__main__':
     debug = os.environ.get('FLASK_ENV') != 'production'
     
     app.run(debug=debug, host='0.0.0.0', port=port)
+
+# Initialize database when module is imported (for gunicorn/production)
+try:
+    init_db()
+    print("Database initialized for production deployment")
+except Exception as e:
+    print(f"Warning: Could not initialize database: {e}")
