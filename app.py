@@ -7,11 +7,13 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
 
 # Database configuration
-# Use PORT environment variable to detect cloud deployment
-if os.environ.get('PORT'):  # Cloud platforms set PORT env variable
+# Use /tmp for cloud platforms (Railway, Heroku, Render) or local for development
+if os.environ.get('PORT') or os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DYNO') or os.environ.get('RENDER'):
     DATABASE = '/tmp/trackApply.db'
 else:
     DATABASE = 'trackApply.db'
+
+print(f"Using database path: {DATABASE}")
 
 def get_db_connection():
     """Get database connection"""
@@ -46,14 +48,13 @@ def init_db():
     except Exception as e:
         print(f"Database initialization error: {e}")
         raise
-    conn.commit()
-    conn.close()
 
-# Initialize database when the module is loaded (for gunicorn)
+# Initialize database when module is imported (for gunicorn)
 try:
     init_db()
+    print("Database initialized on module import")
 except Exception as e:
-    print(f"Warning: Could not initialize database at startup: {e}")
+    print(f"Failed to initialize database on import: {e}")
 
 @app.route('/')
 def index():
@@ -182,6 +183,11 @@ def api_stats():
     })
 
 if __name__ == '__main__':
+    # Print environment info for debugging
+    print(f"DATABASE path: {DATABASE}")
+    print(f"PORT env var: {os.environ.get('PORT')}")
+    print(f"Current working directory: {os.getcwd()}")
+    
     # Initialize database on first run
     init_db()
     
@@ -189,11 +195,5 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') != 'production'
     
+    print(f"Starting app on port {port}, debug={debug}")
     app.run(debug=debug, host='0.0.0.0', port=port)
-
-# Initialize database when module is imported (for gunicorn/production)
-try:
-    init_db()
-    print("Database initialized for production deployment")
-except Exception as e:
-    print(f"Warning: Could not initialize database: {e}")
